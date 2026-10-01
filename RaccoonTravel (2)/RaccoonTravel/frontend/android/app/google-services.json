@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "988379505257",
+    "project_id": "raccoontravel-ba5c9",
+    "storage_bucket": "raccoontravel-ba5c9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:988379505257:android:8ca2ae89e133eb96d238f8",
+        "android_client_info": {
+          "package_name": "com.example.frontend"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "988379505257-6kfup1l6epfalkc8gjpv6ndguaqt5lp9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSEB6ktlv0euv94Ak8Rsi9ED4jLy4Wn7Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "988379505257-6kfup1l6epfalkc8gjpv6ndguaqt5lp9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
