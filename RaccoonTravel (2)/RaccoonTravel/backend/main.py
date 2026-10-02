@@ -15,8 +15,7 @@ from database import Base, engine
 
 import models
 
-from routers import users, trips, places
-
+from routers import users, trips, places, friends
 
 Base.metadata.create_all(bind=engine)
 
@@ -54,6 +53,7 @@ app.include_router(
     places.router
 )
 
+app.include_router(friends.router)
 
 @app.get("/")
 def read_root():

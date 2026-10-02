@@ -5,7 +5,16 @@ Modele bazodanowe aplikacji RaccoonTravel.
 from datetime import datetime, date
 
 from database import Base
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Date
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Date,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import relationship
 
 
@@ -100,3 +109,95 @@ class Trip(Base):
             return "upcoming"
 
         return "archived"
+class FriendInvitation(Base):
+    """
+    Zaproszenie do znajomych.
+    """
+
+    __tablename__ = "friend_invitations"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
+
+    sender_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
+    )
+
+    receiver_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
+    )
+
+    code = Column(
+        String(20),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+
+    status = Column(
+        String(20),
+        nullable=False,
+        default="pending",
+    )
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+    )
+
+    expires_at = Column(
+        DateTime,
+        nullable=False,
+    )
+
+
+class Friendship(Base):
+    """
+    Relacja znajomości pomiędzy dwoma użytkownikami.
+    """
+
+    __tablename__ = "friendships"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "user1_id",
+            "user2_id",
+            name="uq_friendship_pair",
+        ),
+    )
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
+
+    user1_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
+    )
+
+    user2_id = Column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
+    )
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+    )

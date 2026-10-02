@@ -137,6 +137,7 @@ class _TripsScreenState extends State<TripsScreen> {
 
       setState(() {
         _username = user['username'];
+        _profileImageUrl = user['profile_image_url'];
         _trips = trips;
       });
     } catch (e) {
@@ -153,7 +154,16 @@ class _TripsScreenState extends State<TripsScreen> {
       });
     }
   }
+  Future<void> _loadUser() async {
+    final user = await _authService.getLoggedUser();
 
+    if (!mounted) return;
+
+    setState(() {
+      _username = user?['username'];
+      _profileImageUrl = user?['profile_image_url'];
+    });
+  }
   Future<void> _logout() async {
     await _authService.logout();
 
@@ -166,6 +176,19 @@ class _TripsScreenState extends State<TripsScreen> {
       ),
           (route) => false,
     );
+  }
+  String? get _fullProfileImageUrl {
+    if (_profileImageUrl == null ||
+        _profileImageUrl!.trim().isEmpty) {
+      return null;
+    }
+
+    if (_profileImageUrl!.startsWith('http://') ||
+        _profileImageUrl!.startsWith('https://')) {
+      return _profileImageUrl;
+    }
+
+    return '${AuthService.baseUrl}$_profileImageUrl';
   }
 
   void _onSearchChanged(String value) {
@@ -329,13 +352,15 @@ class _TripsScreenState extends State<TripsScreen> {
           ),
           const Spacer(),
           InkWell(
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const ProfileScreen(),
                 ),
               );
+
+              await _loadData();
             },
             borderRadius: BorderRadius.circular(22),
             child: Padding(
@@ -359,13 +384,32 @@ class _TripsScreenState extends State<TripsScreen> {
                       color: Colors.grey.shade200,
                       border: Border.all(
                         color: Colors.grey.shade300,
-                        width: 1,
                       ),
                     ),
-                    child: Icon(
-                      Icons.person,
-                      color: Colors.grey.shade500,
-                      size: 22,
+                    child: ClipOval(
+                      child: _fullProfileImageUrl != null
+                          ? Image.network(
+                        _fullProfileImageUrl!,
+                        width: 30,
+                        height: 30,
+                        fit: BoxFit.cover,
+                        errorBuilder: (
+                            context,
+                            error,
+                            stackTrace,
+                            ) {
+                          return Icon(
+                            Icons.person,
+                            color: Colors.grey.shade500,
+                            size: 22,
+                          );
+                        },
+                      )
+                          : Icon(
+                        Icons.person,
+                        color: Colors.grey.shade500,
+                        size: 22,
+                      ),
                     ),
                   ),
                 ],

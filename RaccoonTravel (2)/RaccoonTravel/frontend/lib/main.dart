@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/login_screen.dart';
+import 'screens/settings_screen.dart';
 
 void main() {
   runApp(const RaccoonTravelApp());

@@ -135,3 +135,25 @@ class TripResponse(BaseModel):
 
     class Config:
         from_attributes = True
+class FriendInvitationCreate(BaseModel):
+    email: EmailStr
+
+
+class FriendInvitationAccept(BaseModel):
+    code: str = Field(
+        ...,
+        min_length=3,
+        max_length=20,
+    )
+
+
+class FriendResponse(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    username: str
+    email: EmailStr
+    profile_image_url: Optional[str] = None
+
+    class Config:
+        from_attributes = True
