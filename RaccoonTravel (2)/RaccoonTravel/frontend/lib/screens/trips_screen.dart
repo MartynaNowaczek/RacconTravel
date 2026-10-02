@@ -25,8 +25,10 @@ class _TripsScreenState extends State<TripsScreen> {
 
   List<Trip> _trips = [];
   String? _username;
-  String? _profileImageUrl;
 
+  int? _userId;
+  int _profileImageVersion =
+      DateTime.now().millisecondsSinceEpoch;
   bool _isLoading = true;
   bool _showFilters = false;
 
@@ -137,7 +139,11 @@ class _TripsScreenState extends State<TripsScreen> {
 
       setState(() {
         _username = user['username'];
-        _profileImageUrl = user['profile_image_url'];
+        _userId = user['id'];
+
+        _profileImageVersion =
+            DateTime.now().millisecondsSinceEpoch;
+
         _trips = trips;
       });
     } catch (e) {
@@ -161,7 +167,10 @@ class _TripsScreenState extends State<TripsScreen> {
 
     setState(() {
       _username = user?['username'];
-      _profileImageUrl = user?['profile_image_url'];
+      _userId = user?['id'];
+
+      _profileImageVersion =
+          DateTime.now().millisecondsSinceEpoch;
     });
   }
   Future<void> _logout() async {
@@ -178,17 +187,9 @@ class _TripsScreenState extends State<TripsScreen> {
     );
   }
   String? get _fullProfileImageUrl {
-    if (_profileImageUrl == null ||
-        _profileImageUrl!.trim().isEmpty) {
-      return null;
-    }
+    if (_userId == null) return null;
 
-    if (_profileImageUrl!.startsWith('http://') ||
-        _profileImageUrl!.startsWith('https://')) {
-      return _profileImageUrl;
-    }
-
-    return '${AuthService.baseUrl}$_profileImageUrl';
+    return '${AuthService.baseUrl}/users/$_userId/profile-image?v=$_profileImageVersion';
   }
 
   void _onSearchChanged(String value) {

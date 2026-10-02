@@ -26,9 +26,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? _username;
   String? _firstName;
   String? _lastName;
-  File? _profileImage;
-  String? _profileImageUrl;
 
+  File? _profileImage;
+
+  int? _userId;
+  int _profileImageVersion =
+      DateTime.now().millisecondsSinceEpoch;
   List<Map<String, dynamic>> _friends = [];
 
   bool _isLoading = true;
@@ -56,9 +59,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _username = user?['username'];
         _firstName = user?['first_name'] ?? user?['name'] ?? user?['firstName'];
         _lastName = user?['last_name'] ?? user?['surname'] ?? user?['lastName'];
-        _profileImageUrl = user?['profile_image_url'];
         _friends = friends;
         _isLoading = false;
+        _userId = user?['id'];
+        _profileImageVersion =
+            DateTime.now().millisecondsSinceEpoch;
       });
     } catch (e) {
       if (!mounted) return;
@@ -96,34 +101,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (selectedImage == null || !mounted) return;
 
-    setState(() => _isUploadingImage = true);
+    setState(() {
+      _isUploadingImage = true;
+    });
 
     try {
-      final imageUrl = await _authService.uploadProfileImage(selectedImage.path);
+      await _authService.uploadProfileImage(
+        selectedImage.path,
+      );
+
       if (!mounted) return;
 
       setState(() {
-        _profileImage = File(selectedImage.path);
-        _profileImageUrl = imageUrl;
+        _profileImage = null;
+        _profileImageVersion =
+            DateTime.now().millisecondsSinceEpoch;        _isUploadingImage = false;
+      });
+
+      _showMessage(
+        'Zdjęcie profilowe zostało zapisane.',
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
         _isUploadingImage = false;
       });
 
-      _showMessage('Zdjęcie profilowe zostało zapisane.');
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isUploadingImage = false);
-      _showMessage(e.toString().replaceFirst('Exception: ', ''));
+      _showMessage(
+        e.toString().replaceFirst(
+          'Exception: ',
+          '',
+        ),
+      );
     }
   }
 
-  String? get _fullProfileImageUrl => _fullImageUrl(_profileImageUrl);
 
-  String? _fullImageUrl(String? imageUrl) {
-    if (imageUrl == null || imageUrl.trim().isEmpty) return null;
-    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-      return imageUrl;
-    }
-    return '${AuthService.baseUrl}$imageUrl';
+  String? get _fullProfileImageUrl {
+    if (_userId == null) return null;
+
+    return '${AuthService.baseUrl}/users/$_userId/profile-image?v=$_profileImageVersion';
   }
 
   String get _displayName {
@@ -511,8 +529,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (!mounted) return;
 
-    final imageUrl = _fullImageUrl(details['profile_image_url']?.toString());
-    final displayName = _friendDisplayName(details);
+    final detailsId = details['id'];
+
+    final String? imageUrl = detailsId is int
+        ? '${AuthService.baseUrl}/users/$detailsId/profile-image'
+        : null;    final displayName = _friendDisplayName(details);
     final username = (details['username'] ?? '').toString();
     final email = (details['email'] ?? '').toString();
 
@@ -917,8 +938,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildFriendAvatar(Map<String, dynamic> friend) {
-    final imageUrl = _fullImageUrl(friend['profile_image_url']?.toString());
+    final friendId = friend['id'];
 
+    final String? imageUrl = friendId is int
+        ? '${AuthService.baseUrl}/users/$friendId/profile-image'
+        : null;
     return Container(
       width: 46,
       height: 46,

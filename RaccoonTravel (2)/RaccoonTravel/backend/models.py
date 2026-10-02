@@ -14,6 +14,7 @@ from sqlalchemy import (
     ForeignKey,
     Date,
     UniqueConstraint,
+    LargeBinary,
 )
 from sqlalchemy.orm import relationship
 
@@ -26,6 +27,8 @@ class User(Base):
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
     profile_image_url = Column(String(1000), nullable=True)
+    profile_image = Column(LargeBinary, nullable=True)
+    profile_image_content_type = Column(String(100), nullable=True)
 
     username = Column(String(100), unique=True, nullable=False, index=True)
     email = Column(String(255), unique=True, nullable=False, index=True)

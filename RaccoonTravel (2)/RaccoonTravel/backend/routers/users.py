@@ -8,7 +8,7 @@ import secrets
 import uuid
 
 from datetime import datetime, timedelta
-
+from fastapi.responses import Response
 from fastapi import (
     APIRouter,
     Depends,
@@ -190,31 +190,6 @@ async def upload_profile_image(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """
-    Ustawia lub zmienia zdjęcie profilowe aktualnie zalogowanego użytkownika.
-    """
-
-    original_filename = file.filename or "profile.jpg"
-
-    _, extension = os.path.splitext(original_filename)
-
-    extension = extension.lower()
-
-    allowed_extensions = {
-        ".jpg",
-        ".jpeg",
-        ".png",
-        ".webp",
-        ".heic",
-        ".heif",
-    }
-
-    if extension not in allowed_extensions:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Nieobsługiwany format zdjęcia.",
-        )
-
     contents = await file.read()
 
     max_size = 5 * 1024 * 1024
@@ -225,62 +200,76 @@ async def upload_profile_image(
             detail="Zdjęcie może mieć maksymalnie 5 MB.",
         )
 
-    upload_directory = os.path.join(
-        "uploads",
-        "profile_images",
-    )
+    content_type = file.content_type or ""
 
-    os.makedirs(
-        upload_directory,
-        exist_ok=True,
-    )
+    allowed_types = {
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+    }
 
-    if extension == ".jpeg":
-        extension = ".jpg"
+    if content_type not in allowed_types:
+        if contents.startswith(b"\xff\xd8\xff"):
+            content_type = "image/jpeg"
 
-    filename = (
-        f"user_{current_user.id}_"
-        f"{uuid.uuid4().hex}"
-        f"{extension}"
-    )
+        elif contents.startswith(b"\x89PNG\r\n\x1a\n"):
+            content_type = "image/png"
 
-    file_path = os.path.join(
-        upload_directory,
-        filename,
-    )
+        elif (
+            len(contents) >= 12
+            and contents[:4] == b"RIFF"
+            and contents[8:12] == b"WEBP"
+        ):
+            content_type = "image/webp"
 
-    old_image_url = current_user.profile_image_url
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Dozwolone są tylko zdjęcia JPG, PNG oraz WEBP.",
+            )
 
-    with open(file_path, "wb") as image_file:
-        image_file.write(contents)
-
-    profile_image_url = (
-        f"/uploads/profile_images/{filename}"
-    )
-
-    current_user.profile_image_url = profile_image_url
+    current_user.profile_image = contents
+    current_user.profile_image_content_type = content_type
+    current_user.profile_image_url = None
 
     db.add(current_user)
     db.commit()
     db.refresh(current_user)
 
-    if old_image_url:
-        old_path = (
-            old_image_url
-            .lstrip("/")
-            .replace("/", os.sep)
+    return {
+        "message": "Zdjęcie profilowe zostało zapisane.",
+        "profile_image_url": f"/users/{current_user.id}/profile-image",
+    }
+@router.get("/{user_id}/profile-image")
+def get_profile_image(
+    user_id: int,
+    db: Session = Depends(get_db),
+):
+    user = (
+        db.query(User)
+        .filter(User.id == user_id)
+        .first()
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Nie znaleziono użytkownika.",
         )
 
-        if os.path.exists(old_path):
-            try:
-                os.remove(old_path)
-            except OSError:
-                pass
+    if user.profile_image is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Użytkownik nie ma zdjęcia profilowego.",
+        )
 
-    return {
-        "profile_image_url":
-            current_user.profile_image_url
-    }
+    return Response(
+        content=user.profile_image,
+        media_type=(
+            user.profile_image_content_type
+            or "image/jpeg"
+        ),
+    )
 @router.post(
     "/forgot-password"
 )
